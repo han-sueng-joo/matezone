@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATEZONE</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: rgb(245, 245, 245);
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 2px solid #004d00;
+        }
+        header h1 {
+            color: #004d00;
+            cursor: pointer;
+        }
+        nav {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+        }
+        nav a {
+            text-decoration: none;
+            color: #004d00;
+            font-weight: 900;
+            font-size: 21px;
+        }
+        .login-btn {
+            background-color: #004d00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .auth-container {
+            width: 360px;
+            margin: 50px auto;
+            background: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #004d00;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #003300;
+        }
+        .switch-auth {
+            font-size: 12px;
+            color: #666;
+            margin-top: 16px;
+        }
+        .switch-auth a {
+            color: #004d00;
+            text-decoration: none;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 헤더 -->
+    <header>
+        <h1 onclick="goToMain()">MATEZONE</h1>
+        <nav>
+            <a href="#">수업</a>
+            <a href="#">공강</a>
+            <a href="#">룸메이트</a>
+            <a href="#">집/이동</a>
+        </nav>
+        <button class="login-btn">로그인/회원가입</button>
+    </header>
+
+    <!-- 로그인/회원가입 -->
+    <div class="auth-container">
+        <div id="login-form" class="auth-form">
+            <h2>로그인</h2>
+            <input type="email" placeholder="이메일 또는 전화" required>
+            <input type="password" placeholder="비밀번호" required>
+            <button class="btn" onclick="handleLogin()">로그인</button>
+            <p class="switch-auth">처음이신가요? <a href="#" onclick="showSignup()">회원가입</a></p>
+        </div>
+
+        <div id="signup-form" class="auth-form hidden">
+            <h2>회원가입</h2>
+            <input type="text" placeholder="이름" required>
+            <input type="email" placeholder="이메일" required>
+            <input type="password" placeholder="비밀번호" required>
+            <input type="password" placeholder="비밀번호 확인" required>
+            <button class="btn" onclick="handleSignup()">회원가입</button>
+            <p class="switch-auth">이미 계정이 있으신가요? <a href="#" onclick="showLogin()">로그인</a></p>
+        </div>
+    </div>
+
+    <script>
+        function showSignup() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-form').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('signup-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+        }
+
+        function handleLogin() {
+            alert('로그인이 완료되었습니다!');
+        }
+
+        function handleSignup() {
+            alert('회원가입이 완료되었습니다!');
+        }
+
+        function goToMain() {
+            window.location.href = 'main.html'; // 메인 페이지 파일 경로
+        }
+    </script>
+</body>
+</html>

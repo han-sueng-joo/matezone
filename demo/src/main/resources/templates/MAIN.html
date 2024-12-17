@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MATEZONE</title>
+    <style>
+        /* 전체 스타일 */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9; /* 배경색 */
+            color: #333; /* 기본 글자 색 */
+        }
+
+        /* 헤더 스타일 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 2px solid #004d00;
+        }
+        header h1 {
+            color: #004d00;
+            cursor: pointer;
+        }
+        nav {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            gap: 100px;
+        }
+        nav a {
+            text-decoration: none;
+            color: #004d00;
+            font-weight: 900;
+            font-size: 21px;
+            cursor: pointer;
+        }
+        .login-btn {
+            background-color: #004d00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* 컨텐츠 스타일 */
+        .content {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* 게시글 카드 스타일 */
+        .post {
+            background: white;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .post:hover {
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .post h2 {
+            font-size: 20px;
+            margin: 0 0 10px;
+            color: #004d00;
+        }
+        .post p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* 글 작성 버튼 스타일 */
+        .write-btn {
+            display: block;
+            width: 150px;
+            margin: 20px auto;
+            text-align: center;
+            background-color: #004d00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        /* 숨김 스타일 */
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 onclick="showAllPosts()">MATEZONE</h1>
+        <nav>
+            <!-- 카테고리 버튼 -->
+            <a href="#" onclick="filterPosts('수업'); return false;">수업</a>
+            <a href="#" onclick="filterPosts('공강'); return false;">공강</a>
+            <a href="#" onclick="filterPosts('룸메이트'); return false;">룸메이트</a>
+            <a href="#" onclick="filterPosts('집/이동'); return false;">집/이동</a>
+            <a href="#" onclick="showAllPosts(); return false;">모두 보기</a>
+        </nav>
+        <button class="login-btn" onclick="redirectToLogin()">로그인/회원가입</button>
+    </header>
+    <div class="content">
+        <!-- 글 작성 버튼 -->
+        <button class="write-btn hidden" id="writeBtn" onclick="writePost()">글 작성하기</button>
+        <!-- 게시글 목록 -->
+        <div class="post" data-category="수업">
+            <a href="postDetail.html?title=게시글1 제목&content=내용&tags=태그1"><h2>게시글1 제목</h2></a>
+            <p>내용</p>
+        </div>
+        <div class="post" data-category="공강">
+            <a href="postDetail.html?title=게시글2 제목&content=내용&tags=태그2"><h2>게시글2 제목</h2></a>
+            <p>내용</p>
+        </div>
+        <div class="post" data-category="룸메이트">
+            <a href="postDetail.html?title=게시글3 제목&content=내용&tags=태그3"><h2>게시글3 제목</h2></a>
+            <p>내용</p>
+        </div>
+        <div class="post" data-category="집/이동">
+            <a href="postDetail.html?title=게시글4 제목&content=내용&tags=태그4"><h2>게시글4 제목</h2></a>
+            <p>내용</p>
+        </div>
+    </div>
+
+    <script>
+        let currentCategory = '';
+
+        function filterPosts(category) {
+            const posts = document.querySelectorAll('.post');
+            posts.forEach(post => {
+                if (post.getAttribute('data-category') === category) {
+                    post.classList.remove('hidden');
+                } else {
+                    post.classList.add('hidden');
+                }
+            });
+            currentCategory = category; // 현재 카테고리 저장
+            document.getElementById('writeBtn').classList.remove('hidden'); // 글 작성 버튼 표시
+        }
+
+        function showAllPosts() {
+            const posts = document.querySelectorAll('.post');
+            posts.forEach(post => post.classList.remove('hidden'));
+            document.getElementById('writeBtn').classList.add('hidden'); // 글 작성 버튼 숨기기
+            currentCategory = ''; // 현재 카테고리 초기화
+        }
+
+        function writePost() {
+            // 글 작성 화면으로 이동
+            window.location.href = `write.html?category=${currentCategory}`;
+        }
+
+        function redirectToLogin() {
+            window.location.href = 'login.html'; // 로그인 페이지로 이동
+        }
+
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                board: params.get('board'),
+                title: params.get('title'),
+                content: params.get('content'),
+                tags: params.get('tags')
+            };
+        }
+
+        function updatePostPreview() {
+            const { board, title, content, tags } = getQueryParams();
+            if (board && title && content) {
+                const newPost = document.createElement('div');
+                newPost.classList.add('post');
+                newPost.setAttribute('data-category', board);
+                newPost.innerHTML = `<a href="postDetail.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}"><h2>${title}</h2></a><p>${content}</p><p>${tags}</p>`;
+                document.querySelector('.content').appendChild(newPost);
+                filterPosts(board);
+            }
+        }
+
+        updatePostPreview();
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 상세보기</title>
+    <style>
+        /* 전체 스타일 */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        /* 헤더 스타일 */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 2px solid #004d00;
+        }
+        header h1 {
+            color: #004d00;
+            cursor: pointer;
+        }
+        .back-btn {
+            background-color: #004d00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* 컨텐츠 스타일 */
+        .content {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* 게시글 스타일 */
+        .post-detail {
+            background: white;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .post-detail h2 {
+            font-size: 24px;
+            margin: 0 0 10px;
+            color: #004d00;
+        }
+        .post-detail p {
+            margin: 0 0 10px;
+            color: #666;
+            font-size: 16px;
+        }
+        .post-detail .tags {
+            color: #004d00;
+            font-weight: bold;
+        }
+
+        /* 수정하기 버튼 스타일 */
+        .edit-btn {
+            background-color: #004d00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1 onclick="goToMain()">MATEZONE</h1>
+        <button class="back-btn" onclick="goBack()">뒤로가기</button>
+    </header>
+    <div class="content">
+        <div class="post-detail">
+            <h2 id="postTitle">제목</h2>
+            <p id="postContent">본문</p>
+            <p class="tags" id="postTags">태그</p>
+            <button class="edit-btn" onclick="editPost()">수정하기</button>
+        </div>
+    </div>
+
+    <script>
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                title: params.get('title'),
+                content: params.get('content'),
+                tags: params.get('tags')
+            };
+        }
+
+        function displayPostDetails() {
+            const { title, content, tags } = getQueryParams();
+            document.getElementById('postTitle').textContent = title;
+            document.getElementById('postContent').textContent = content;
+            document.getElementById('postTags').textContent = tags;
+        }
+
+        function goBack() {
+            const { title, content, tags } = getQueryParams();
+            window.location.href = `categoryView.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+        }
+
+        function goToMain() {
+            const { title, content, tags } = getQueryParams();
+            window.location.href = `main.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+        }
+
+        function editPost() {
+            const { title, content, tags } = getQueryParams();
+            window.location.href = `editPost.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+        }
+
+        displayPostDetails();
+    </script>
+</body>
+</html>

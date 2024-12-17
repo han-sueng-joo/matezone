@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 수정</title>
+    <style>
+        /* 전체 레이아웃 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* 컨테이너 스타일 */
+        .container {
+            width: 80%;
+            max-width: 1200px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        /* 제목 스타일 */
+        .container h1 {
+            font-size: 32px;
+            color: #2d5c43;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* 입력 필드 스타일 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .form-group select,
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .form-group textarea {
+            resize: none;
+            height: 150px;
+        }
+
+        /* 태그 버튼 스타일 */
+        .tag-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .tag-button {
+            padding: 12px 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tag-button.selected {
+            background-color: #2d5c43;
+            color: white;
+        }
+
+        .tag-button:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* 파일 업로드 스타일 */
+        .file-upload {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .file-upload label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: #f0f0f0;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        .file-upload label:hover {
+            background-color: #e0e0e0;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        /* 작성 버튼 스타일 */
+        .form-actions {
+            text-align: center;
+        }
+
+        .form-actions button {
+            background-color: #2d5c43;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .form-actions button:hover {
+            background-color: #1e4031;
+        }
+
+        /* 삭제 버튼 스타일 */
+        .delete-btn {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>게시글 수정</h1>
+        <form id="editPostForm">
+            <!-- 제목 입력 -->
+            <div class="form-group">
+                <label for="title">제목</label>
+                <input type="text" id="title" name="title" placeholder="제목을 입력해주세요">
+            </div>
+
+            <!-- 본문 입력 -->
+            <div class="form-group">
+                <label for="content">본문</label>
+                <textarea id="content" name="content" placeholder="본문을 입력해주세요"></textarea>
+            </div>
+
+            <!-- 태그 버튼 -->
+            <div class="form-group">
+                <label>태그</label>
+                <div class="tag-buttons" id="tagButtons">
+                    <!-- 태그 버튼이 동적으로 생성됩니다 -->
+                </div>
+                <!-- 선택된 태그를 저장할 숨겨진 input -->
+                <input type="hidden" id="tags" name="tags" value="">
+            </div>
+
+            <!-- 파일 업로드 -->
+            <div class="form-group">
+                <label>파일 업로드</label>
+                <div class="file-upload">
+                    <label>
+                        <input type="file" name="image" accept="image/*">
+                        📷 이미지 선택
+                    </label>
+                    <label>
+                        <input type="file" name="attachment">
+                        📎 파일 첨부
+                    </label>
+                </div>
+            </div>
+
+            <!-- 작성 버튼 -->
+            <div class="form-actions">
+                <button type="submit">수정하기</button>
+            </div>
+        </form>
+        <button class="delete-btn" onclick="deletePost()">삭제하기</button>
+    </div>
+
+    <script>
+        const tagButtonsContainer = document.getElementById('tagButtons');
+        const hiddenTagInput = document.getElementById('tags');
+
+        const tagsByCategory = {
+            '수업': ['#팀플', '#수강신청', '#강의교환', '#스터디', '#졸업작품'],
+            '공강': ['#공강시간', '#식사장소', '#자유활동', '#동아리활동'],
+            '룸메이트': ['#기숙사 룸메이트', '#자취 룸메이트', '#룸메 변경'],
+            '집/이동': ['#카풀', '#택시공유', '#물품 대여 및 교환', '#자유활동']
+        };
+
+        function getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                title: params.get('title'),
+                content: params.get('content'),
+                tags: params.get('tags')
+            };
+        }
+
+        function populateForm() {
+            const { title, content, tags } = getQueryParams();
+            document.getElementById('title').value = title;
+            document.getElementById('content').value = content;
+            const tagList = tags.split(', ');
+            tagList.forEach(tag => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'tag-button selected';
+                button.dataset.tag = tag;
+                button.textContent = tag;
+                button.addEventListener('click', () => {
+                    button.classList.toggle('selected');
+                    updateSelectedTags();
+                });
+                tagButtonsContainer.appendChild(button);
+            });
+            hiddenTagInput.value = tags;
+        }
+
+        function updateSelectedTags() {
+            const selectedTags = Array.from(document.querySelectorAll('.tag-button.selected'))
+                .map(button => button.dataset.tag);
+            hiddenTagInput.value = selectedTags.join(', ');
+        }
+
+        document.getElementById('editPostForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const tags = hiddenTagInput.value;
+            window.location.href = `postDetail.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+        });
+
+        function deletePost() {
+            if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+                window.location.href = 'categoryView.html';
+            }
+        }
+
+        populateForm();
+    </script>
+</body>
+</html>
