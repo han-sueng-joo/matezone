@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
+import java.sql.Statement;
 
 @Component
 public class MateDAO {
@@ -42,59 +43,73 @@ public class MateDAO {
 			return postList;
 		}
 	}
-    /*
-     * 
-     * 
-     * public void addPost(Post n) throws Exception {
-		Connection conn = open();
-		String sql = "insert into post(title,img,date,content) values(?,?,CURRENT_TIMESTAMP(),?)";
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		try (conn; pstmt) {// try 블록이 종료 될때 conn과 pstmt는 자동으로 닫히는 리소스로 간주
-			pstmt.setString(1, n.getTitle());
-			pstmt.setString(2, n.getImg());
-			pstmt.setString(3, n.getContent());
-			pstmt.executeUpdate();
-		}
 
-		
+	public void addPost(Post n, List<Integer> tagIds) throws Exception {
+		Connection conn = open();
+		String postSql = "INSERT INTO post(title, img, createdAt, content) VALUES (?, ?, CURRENT_TIMESTAMP(), ?)";
+		String postTagSql = "INSERT INTO posttag(tagId, postId) VALUES (?, ?)";
+	
+		PreparedStatement postPstmt = conn.prepareStatement(postSql, Statement.RETURN_GENERATED_KEYS);
+		PreparedStatement postTagPstmt = conn.prepareStatement(postTagSql);
+
+		try (conn; postPstmt; postTagPstmt) {
+			// 1. Post 테이블에 데이터 삽입
+			postPstmt.setString(1, n.getTitle());
+			postPstmt.setString(2, n.getImg());
+			postPstmt.setString(3, n.getContent());
+			postPstmt.executeUpdate();
+
+			// 2. 생성된 postId 가져오기
+			ResultSet rs = postPstmt.getGeneratedKeys();
+			int postId = 0;
+			if (rs.next()) {
+				postId = rs.getInt(1); // 생성된 postId 가져오기
+			}
+
+			// 3. Posttag 테이블에 tagId와 postId 삽입
+			for (int tagId : tagIds) {
+				postTagPstmt.setInt(1, tagId);
+				postTagPstmt.setInt(2, postId);
+				postTagPstmt.addBatch(); // 배치에 추가
+			}
+			postTagPstmt.executeBatch(); // 배치 실행
+		}
 	}
 
-	public News getNews(int aid) throws SQLException {
+	public Post getPost(int aid) throws SQLException {
 		Connection conn = open();
-		News n = new News();
-		String sql = "select aid, title, img, PARSEDATETIME(FORMATDATETIME(date, 'yyyy-MM-dd HH:mm:ss'), 'yyyy-MM-dd HH:mm:ss') as cdate, content from news where aid=?";
-		//mysql문법에 맞춰 sql문이 수정됨
-		//String sql = "SELECT aid, title, img, DATE_FORMAT(date, '%Y-%m-%d %H:%i:%s') AS cdate, content FROM news WHERE aid = ?";
+		Post n = new Post();
+		String sql = "SELECT title, img, createdAt, content FROM post WHERE aid = ?";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		pstmt.setInt(1, aid);// 1은 ?의 위치 / 위치 정보는 1부터 시작
 		ResultSet rs = pstmt.executeQuery();
 		rs.next();
 
 		try (conn; pstmt; rs) {
-			n.setAid(rs.getInt("aid"));
+			n.setPostId(rs.getInt("aid"));
 			n.setTitle(rs.getString("title"));
 			n.setImg(rs.getString("img"));
-			n.setDate(rs.getString("cdate"));
+			n.setCreatedAt(rs.getString("createdAt"));
 			n.setContent(rs.getString("content"));
 			pstmt.executeQuery();
 			return n;
 		}
 	}
 
-	public void delNews(int aid) throws SQLException {
+	public void delPost(int aid) throws SQLException {
 		Connection conn = open();
 		String sql = "delete from news where aid=?";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		try (conn; pstmt) {
 			pstmt.setInt(1, aid);
-			// 삭제된 뉴스 기사가 없을 경우
+			// 삭제된 게스글이 없을 경우
 			if (pstmt.executeUpdate() == 0) {
 				throw new SQLException("DB에러");
 			}
 		}
 	}
 
-	public void updateNews(News n) throws SQLException {
+	public void updatePost(Post n) throws SQLException {
 		// DB 연결
 		Connection conn = open();
 		String sql = "UPDATE news SET title = ?, content = ?, img = ? WHERE aid = ?";
@@ -105,14 +120,11 @@ public class MateDAO {
 			pstmt.setString(1, n.getTitle()); // 제목
 			pstmt.setString(2, n.getContent()); // 내용
 			pstmt.setString(3, n.getImg()); // 이미지 경로
-			pstmt.setInt(4, n.getAid()); // 뉴스 ID (aid)
+			pstmt.setInt(4, n.getPostId()); // 게시글 ID
 
 			// UPDATE 쿼리 실행
 			pstmt.executeUpdate();
-        }
-    }
-     * 
-     * 
-     */
-	
+		}
+	}
+ 
 }

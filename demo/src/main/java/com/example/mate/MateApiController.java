@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,48 +33,37 @@ public class MateApiController {
 		}
 		return postList;
 	}
-}
 
-    /*
-     *  // 뉴스 등록
 	@PostMapping
-	public String addNews(@RequestBody News news) {
+	public String addPost(@RequestBody Post post, @RequestParam("tagIds") List<Integer> tagIds) {
 		try {
-			dao.addNews(news);
+			dao.addPost(post, tagIds);
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "News API: 뉴스 등록 실패!!";
+			return "Post API: 게시글 등록 실패!!";
 		}
-		return "News API: 뉴스 등록됨!!";
+		return "Post API: 게시글 등록됨!!";
 	}
 
-	// 뉴스 삭제
 	@DeleteMapping("{aid}")
-	public String delNews(@PathVariable("aid") int aid) {
+	public String delPost(@PathVariable("aid") int aid) {
 		try {
-			dao.delNews(aid);
+			dao.delPost(aid);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			return "News API: 뉴스 삭제 실패!! -" + aid;
 		}
 		return "News API: 뉴스 삭제됨!! -" + aid;
 	}
-     * 
-     * // 뉴스 상세 정보
+
 	@GetMapping("{aid}")
-	public News getNews(@PathVariable("aid") int aid) {
-		News news = null;
+	public Post getPost(@PathVariable("aid") int aid) {
+		Post post = null;
 		try {
-			news = dao.getNews(aid);
+			post = dao.getPost(aid);
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return news;
+		return post;
 	}
-     */
-   
-
-	
-
-	
-//}
+}

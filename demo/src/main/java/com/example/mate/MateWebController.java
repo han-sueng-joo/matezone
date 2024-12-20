@@ -43,61 +43,49 @@ public class MateWebController {
 			logger.warn("게시글 목록 생성 과정에서 문제 발생!!");
 			m.addAttribute("error", "게시글 목록이 정상적으로 처리되지 않았습니다!!");
 		}
-		//return "MAIN";
-		return "test";//임시 테스트용 코드
+		return "MAIN";
 	}
-}
 
-
-    /*
-     * @PostMapping("/add")
-	public String addNews(@ModelAttribute News news, Model m, @RequestParam("file") MultipartFile file) {
+	@PostMapping("/add")
+	public String addPost(@ModelAttribute Post post, Model m, @RequestParam("file") MultipartFile file, @RequestParam("tagIds") List<Integer> tagIds) {
 		try {
 			// 저장 파일 객체 생성
 			File dest = new File(fdir + "/" + file.getOriginalFilename());
 			// 파일 저장
 			file.transferTo(dest); // 업로드한 파일을 지정한 경로에 저장
-			// News 객체에 파일 이름 저장
-			news.setImg("/img/" + dest.getName());
-			dao.addNews(news);
+			// 객체에 파일 이름 저장
+			post.setImg("/img/" + dest.getName());
+			dao.addPost(post, tagIds);
 		} catch (Exception e) {
 			e.printStackTrace();
-			logger.info("뉴스 추가 과정에서 문제 발생!!");
-			m.addAttribute("error", "뉴스가 정상적으로 등록되지 않았습니다!!");
+			logger.info("게시글 추가 과정에서 문제 발생!!");
+			m.addAttribute("error", "게시글이 정상적으로 등록되지 않았습니다!!");
 		}
-		return "redirect:/news/list";
+		return "redirect:/MAIN";
 	}
 
 	@GetMapping("/delete/{aid}")
-	public String deleteNews(@PathVariable int aid, Model m) {
+	public String deletePost(@PathVariable int aid, Model m) {
 		try {
-			dao.delNews(aid);
+			dao.delPost(aid);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			logger.warn("뉴스 삭제 과정에서 문제 발생!!");
-			m.addAttribute("error", "뉴스가 정상적으로 삭제되지 않았습니다!!");
+			logger.warn("게시글 삭제 과정에서 문제 발생!!");
+			m.addAttribute("error", "게시글이 정상적으로 삭제되지 않았습니다!!");
 		}
-		return "redirect:/news/list";
+		return "redirect:/MAIN";
 	}
-     * 
-     * @GetMapping("/{aid}")
-	public String getNews(@PathVariable int aid, Model m) {
+
+	@GetMapping("/{aid}")
+	public String getPost(@PathVariable int aid, Model m) {
 		try {
-			News n = dao.getNews(aid);
+			Post n = dao.getPost(aid);
 			m.addAttribute("news", n);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			logger.warn("뉴스를 가져오는 과정에서 문제 발생!!");
-			m.addAttribute("error", "뉴스를 정상적으로 가져오지 못했습니다!!");
+			logger.warn("게시글을 가져오는 과정에서 문제 발생!!");
+			m.addAttribute("error", "게시글을 정상적으로 가져오지 못했습니다!!");
 		}
-		return "news/newsView";
+		return "postDetail";
 	}
-     */
-
-
-	
-
-	
-
-	
-//}
+}

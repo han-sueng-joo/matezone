@@ -134,6 +134,14 @@
         </div>
     </div>
 
+    <!-- 데이터 가져오기 테스트 -->
+    <h1>게시글 목록</h1>
+    <ul>
+        <li th:each="post : ${postlist}">
+            <span th:text="${post.title}"></span>
+        </li>
+    </ul>
+
     <script>
         let currentCategory = '';
 
