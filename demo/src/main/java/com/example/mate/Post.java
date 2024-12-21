@@ -14,4 +14,5 @@ public class Post {
     private String createdAt;
     private String updatedAt;
     private String content;
+    private int applyNum;
 }

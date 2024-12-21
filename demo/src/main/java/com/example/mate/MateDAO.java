@@ -166,7 +166,7 @@ public class MateDAO {
 	public Post getPost(int postId) throws SQLException {
 		Connection conn = open();
 		Post n = new Post();
-		String sql = "SELECT postId, title, img, createdAt, content, userId FROM post WHERE postId = ?";
+		String sql = "SELECT postId, title, img, createdAt, content, userId, applyNum FROM post WHERE postId = ?";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		pstmt.setInt(1, postId);// 1은 ?의 위치 / 위치 정보는 1부터 시작
 		ResultSet rs = pstmt.executeQuery();
@@ -180,6 +180,7 @@ public class MateDAO {
 				n.setCreatedAt(rs.getString("createdAt"));
 				n.setContent(rs.getString("content"));
 				n.setUserId(rs.getString("userId"));
+				n.setApplyNum(rs.getInt("applyNum"));
 			} else {
 				throw new SQLException("No post found with postId: " + postId);
 			}
