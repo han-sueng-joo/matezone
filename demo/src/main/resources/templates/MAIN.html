@@ -97,6 +97,31 @@
         .hidden {
             display: none;
         }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            background-color: #f1f1f1;
+            border-radius: 8px;
+        }
+
+        .tag-item {
+            padding: 8px 12px;
+            border: 1px solid #004d00;
+            border-radius: 20px;
+            background-color: #ffffff;
+            color: #004d00;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .tag-item:hover {
+            background-color: #004d00;
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -110,20 +135,21 @@
             <a href="categoryView/4">집/이동</a>
             <a href="/mate/">모두 보기</a>
         </nav>
-        <button class="login-btn" onclick="redirectToLogin()">로그인/회원가입</button>
+        <!-- 로그인/로그아웃 버튼 표시 -->
+        <div th:if="${userId != null}">
+            <p>로그인 사용자: <span th:text="${userId}"></span></p>
+            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        </div>
+        <div th:if="${userId == null}">
+            <button class="login-btn" onclick="redirectToLogin()">로그인/회원가입</button>
+        </div>
     </header>
 
     <!-- 데이터 가져오기 테스트 -->
-    <h1>테그 목록</h1>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        <div th:each="tag : ${tagName}" style="padding: 5px; border: 1px solid #ccc; border-radius: 5px;">
-            <span th:text="${tag.tagName}"></span>
+    <div class="tag-container">
+        <div th:each="tag : ${tagName}" class="tag-item" onclick="filterByTag('[[${tag.tagName}]]')">
+            <span>#<span th:text="${tag.tagName}"></span></span>
         </div>
-    </div>
-
-    <!-- userId 값이 있을 때 출력 -->
-    <div th:if="${userId != null}">
-        <p>로그인 사용자: <span th:text="${userId}"></span></p>
     </div>
 
     <div class="content">
@@ -134,8 +160,6 @@
             </a>
         </div>
     </div>
-
-    
 
     <script>
         let currentCategory = '';
@@ -169,6 +193,10 @@
             window.location.href = 'login'; // 로그인 페이지로 이동
         }
 
+        function logout() {
+            window.location.href = 'logout'; // 로그아웃 
+        }
+
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
             return {
@@ -179,21 +207,11 @@
             };
         }
 
-        /*
-        function updatePostPreview() {
-            const { board, title, content, tags } = getQueryParams();
-            if (board && title && content) {
-                const newPost = document.createElement('div');
-                newPost.classList.add('post');
-                newPost.setAttribute('data-category', board);
-                newPost.innerHTML = `<a href="postDetail?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}"><h2>${title}</h2></a><p>${content}</p><p>${tags}</p>`;
-                document.querySelector('.content').appendChild(newPost);
-                filterPosts(board);
-            }
+        function filterByTag(tagName) {
+            // 태그 이름에서 #을 제거
+            const cleanedTagName = tagName.replace('#', '');
+            window.location.href = `/mate/tag/${encodeURIComponent(cleanedTagName)}`;
         }
-
-        updatePostPreview();
-        */
     </script>
 </body>
 </html>

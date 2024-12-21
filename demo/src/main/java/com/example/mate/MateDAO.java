@@ -80,87 +80,65 @@ public class MateDAO {
 
 	public void addPost(Post n, List<String> tagNames, String userId) throws Exception {
 		Connection conn = open();
-	
-		// SQL 문 정의
+
 		String postSql = "INSERT INTO post(title, img, createdAt, content, userId) VALUES (?, ?, CURRENT_TIMESTAMP(), ?, ?)";
 		String getTagIdSql = "SELECT tagId FROM tag WHERE tagName = ?";
 		String postTagSql = "INSERT INTO posttag(tagId, postId) VALUES (?, ?)";
-	
-		// PreparedStatement 생성
-		PreparedStatement postPstmt = conn.prepareStatement(postSql, Statement.RETURN_GENERATED_KEYS);
-		PreparedStatement getTagIdPstmt = conn.prepareStatement(getTagIdSql);
-		PreparedStatement postTagPstmt = conn.prepareStatement(postTagSql);
-	
-		try (conn; postPstmt; getTagIdPstmt; postTagPstmt) {
-			// 1. Post 테이블에 데이터 삽입
-			try {
+
+		try (PreparedStatement postPstmt = conn.prepareStatement(postSql, Statement.RETURN_GENERATED_KEYS);
+					PreparedStatement getTagIdPstmt = conn.prepareStatement(getTagIdSql);
+					PreparedStatement postTagPstmt = conn.prepareStatement(postTagSql)) {
+
+				// 1. Post 테이블에 데이터 삽입
 				postPstmt.setString(1, n.getTitle());
 				postPstmt.setString(2, n.getImg());
 				postPstmt.setString(3, n.getContent());
-				if (userId != null) {
-					postPstmt.setString(4, userId);
-				} else {
-					postPstmt.setString(4, "defaultUserId");
-				}
+				postPstmt.setString(4, userId != null ? userId : "defaultUserId");
 				postPstmt.executeUpdate();
-			} catch (SQLException e) {
-				System.err.println("Error inserting post into database.");
-				System.err.println("SQL: " + postSql);
-				System.err.println("Post data: " + n);
-				throw e;
-			}
-	
-			// 2. 생성된 postId 가져오기
-			int postId = 0;
-			try {
-				ResultSet rs = postPstmt.getGeneratedKeys();
-				if (rs.next()) {
-					postId = rs.getInt(1); // 생성된 postId 가져오기
-				} else {
-					throw new SQLException("Failed to retrieve generated postId.");
+
+				// 2. 생성된 postId 가져오기
+				int postId;
+				try (ResultSet rs = postPstmt.getGeneratedKeys()) {
+						if (rs.next()) {
+								postId = rs.getInt(1);
+						} else {
+								throw new SQLException("Failed to retrieve generated postId.");
+						}
 				}
-			} catch (SQLException e) {
-				System.err.println("Error retrieving generated postId.");
-				throw e;
-			}
-			System.out.println("Tag names to process: " + tagNames);
-			// 3. tagNames를 기반으로 태그 ID를 조회하고 postTag 테이블에 삽입
-			for (String tagName : tagNames) {
-				System.out.println("Tag names to process: " + tagNames);
-				try {
-					// 태그 이름으로 태그 ID 조회
-					getTagIdPstmt.setString(1, tagName);
-					ResultSet tagRs = getTagIdPstmt.executeQuery();
-	
-					if (tagRs.next()) {
-						int tagId = tagRs.getInt("id"); // 태그 ID 가져오기
-	
-						// Posttag 테이블에 삽입
-						postTagPstmt.setInt(1, tagId);
-						postTagPstmt.setInt(2, postId);
-						postTagPstmt.addBatch(); // 배치에 추가
-					} else {
-						System.err.println("Tag not found: " + tagName);
+
+				// 3. 태그 이름으로 `tagId`를 조회하고, `posttag`에 삽입
+				// 태그 처리
+				for (String tagName : tagNames) {
+					// 해시태그 제거 후 검색
+					String processedTagName = tagName.startsWith("#") ? tagName.substring(1) : tagName;
+					try {
+						getTagIdPstmt.setString(1, processedTagName);
+						ResultSet tagRs = getTagIdPstmt.executeQuery();
+
+						if (tagRs.next()) {
+							int tagId = tagRs.getInt("tagId"); // 태그 ID 가져오기
+
+							// Posttag 테이블에 삽입
+							postTagPstmt.setInt(1, tagId);
+							postTagPstmt.setInt(2, postId);
+							postTagPstmt.addBatch(); // 배치에 추가
+						} else {
+							System.err.println("Tag not found: " + processedTagName);
+						}
+					} catch (SQLException e) {
+							System.err.println("Error retrieving tagId for tagName: " + processedTagName);
+							throw e;
 					}
-				} catch (SQLException e) {
-					System.err.println("Error retrieving tagId for tagName: " + tagName);
-					System.err.println("SQL: " + getTagIdSql);
-					throw e;
 				}
-			}
-	
-			try {
-				postTagPstmt.executeBatch(); // 배치 실행
-			} catch (SQLException e) {
-				System.err.println("Error inserting post-tag relationships.");
-				System.err.println("SQL: " + postTagSql);
-				throw e;
-			}
-		} catch (Exception e) {
-			System.err.println("Unexpected error in addPost method.");
-			e.printStackTrace();
-			throw e;
-		}
+
+				// 4. Batch 실행
+				postTagPstmt.executeBatch();
+
+				} catch (Exception e) {
+						System.err.println("Error while adding post and tags");
+						e.printStackTrace();
+						throw e;
+				}
 	}
 
 	public Post getPost(int postId) throws SQLException {
@@ -191,15 +169,28 @@ public class MateDAO {
 	}
 
 	public void delPost(int postId) throws SQLException {
-		Connection conn = open();
-		String sql = "delete from post where postId=?";
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-		try (conn; pstmt) {
-			pstmt.setInt(1, postId);
-			// 삭제된 게스글이 없을 경우
-			if (pstmt.executeUpdate() == 0) {
-				throw new SQLException("DB에러");
-			}
+		Connection conn = null;
+		PreparedStatement deletePostTagStmt = null;
+		PreparedStatement deletePostStmt = null;
+		try {
+			conn = open();
+	
+			// 1. posttag 테이블의 참조 데이터 삭제
+			String deletePostTagSql = "DELETE FROM posttag WHERE postId = ?";
+			deletePostTagStmt = conn.prepareStatement(deletePostTagSql);
+			deletePostTagStmt.setInt(1, postId);
+			deletePostTagStmt.executeUpdate();
+	
+			// 2. post 테이블의 데이터 삭제
+			String deletePostSql = "DELETE FROM post WHERE postId = ?";
+			deletePostStmt = conn.prepareStatement(deletePostSql);
+			deletePostStmt.setInt(1, postId);
+			deletePostStmt.executeUpdate();
+	
+		} finally {
+			if (deletePostTagStmt != null) deletePostTagStmt.close();
+			if (deletePostStmt != null) deletePostStmt.close();
+			if (conn != null) conn.close();
 		}
 	}
 
@@ -413,4 +404,60 @@ public class MateDAO {
             if (conn != null) conn.close();
         }
     }
+
+	public void decrementApplyNum(int postId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = open();
+            String sql = "UPDATE post SET applyNum = applyNum - 1 WHERE postId = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, postId);
+            pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    }
+
+	public void delUserPost(String userId, int postId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = open();
+            String sql = "DELETE FROM userpost WHERE userId = ? AND postId = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, userId);
+            pstmt.setInt(2, postId);
+            pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    }
+
+	public List<Post> getPostsByTag(String tagName) throws Exception {
+		Connection conn = open();
+		List<Post> posts = new ArrayList<>();
+		String sql = """
+						SELECT p.postId, p.title
+						FROM post p
+						JOIN posttag pt ON p.postId = pt.postId
+						JOIN tag t ON pt.tagId = t.tagId
+						WHERE t.tagName = ?
+						""";
+
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+				pstmt.setString(1, tagName);
+				try (ResultSet rs = pstmt.executeQuery()) {
+						while (rs.next()) {
+								Post post = new Post();
+								post.setPostId(rs.getInt("postId"));
+								post.setTitle(rs.getString("title"));
+								posts.add(post);
+						}
+				}
+		}
+		return posts;
+}
 }

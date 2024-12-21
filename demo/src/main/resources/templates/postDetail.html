@@ -107,8 +107,11 @@
             <div th:if="${userId != null && post.userId == userId}">
                 <button class="edit-btn" th:onclick="'window.location.href=\'/mate/editPost/' + ${post.postId} + '\';'">수정하기</button>
             </div>
-            <div th:if="${userId != null && post.userId != userId}">
+            <div th:if="${userId != null && post.userId != userId && !isDupul}">
                 <button class="edit-btn" th:onclick="'window.location.href=\'/mate/apply/' + ${post.postId} + '\';'">신청하기</button>
+            </div>
+            <div th:if="${userId != null && post.userId != userId && isDupul}">
+                <button class="edit-btn" th:onclick="'window.location.href=\'/mate/applyCancel/' + ${post.postId} + '\';'">신청취소하기</button>
             </div>
             <div id="error-message" th:if="${error}" th:text="${error}" style="display: none; color: red;"></div>
 

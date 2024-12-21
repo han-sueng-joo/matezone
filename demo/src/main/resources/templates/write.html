@@ -203,14 +203,23 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedCategory = urlParams.get('category');
+            if (selectedCategory) {
+                document.getElementById('board').value = selectedCategory;
+                updateTags();
+            }
+        });
+
         const tagButtonsContainer = document.getElementById('tagButtons');
         const hiddenTagInput = document.getElementById('tags');
 
         const tagsByCategory = {
-            '수업': ['#팀플', '#수강신청', '#강의교환', '#스터디', '#졸업작품'],
-            '공강': ['#공강시간', '#식사장소', '#자유활동', '#동아리활동'],
-            '룸메이트': ['#기숙사 룸메이트', '#자취 룸메이트', '#룸메 변경'],
-            '집/이동': ['#카풀', '#택시공유', '#물품 대여 및 교환', '#자유활동']
+            '수업': ['#팀플', '#수강신청', '#강의교환', '#스터디', '#졸업작품', '#전공','#교양','#초급','#중급','#고급','#학과통일','#지도교수통일','#월','#화','#수','#목','#금','#토','#일','#남','#녀','#학년','#1명','#2명','#3명이상'],
+            '공강': [ '#교내', '#교외', '#배달','#운동', '#게임', '#산책', '#공부','#동아리' ],
+            '룸메이트': ['#기숙사', '#자취', '#본가 감', '#본가 안감', '#흡연', '#야간활동', '#새벽활동', '#잠귀밝음', '#잠귀어두움'],
+            '집/이동': ['#카풀', '#택시', '#물품대여']
         };
 
         function updateTags() {
@@ -233,33 +242,26 @@
             }
         }
 
-        // 선택된 태그를 업데이트하는 함수
         function updateSelectedTags() {
-            const selectedTags = []; // 선택된 태그를 저장할 배열
-            const tagButtons = document.querySelectorAll('.tag-buttons button.active'); // active 클래스가 있는 버튼 선택
+            const selectedTags = [];
+            const tagButtons = document.querySelectorAll('.tag-buttons button.selected');
 
-            // 선택된 버튼의 data-tag 값을 배열에 추가
             tagButtons.forEach(button => selectedTags.push(button.getAttribute('data-tag')));
 
-            // 숨겨진 input 필드와 태그 표시 업데이트
-            const hiddenTagInput = document.getElementById('tags'); // 숨겨진 input 필드
+            const hiddenTagInput = document.getElementById('tags');
             if (hiddenTagInput) {
-                hiddenTagInput.value = selectedTags.join(','); // ','로 구분된 값 설정
+                hiddenTagInput.value = selectedTags.join(',');
             }
 
-            console.log('Updated tags:', selectedTags.join(',')); // 디버깅 로그
+            console.log('Updated tags:', selectedTags.join(','));
         }
 
-        // 각 태그 버튼에 클릭 이벤트 추가
         document.querySelectorAll('.tag-buttons button').forEach(button => {
             button.addEventListener('click', function () {
-                this.classList.toggle('active'); // active 클래스 토글
-                updateSelectedTags(); // 선택된 태그 업데이트
+                this.classList.toggle('selected');
+                updateSelectedTags();
             });
         });
-
-
-        
     </script>
 </body>
 </html>

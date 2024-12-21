@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -63,8 +64,11 @@ public class MateWebController {
 	}
 
 	@PostMapping("/add")
-	public String addPost(@ModelAttribute Post post, Model m, @RequestParam("image") MultipartFile image, @RequestParam(value = "attachment", required = false) MultipartFile attachment,
-	@RequestParam("tags") String tags, HttpSession session) {
+	public String addPost(@ModelAttribute Post post, Model m,
+						@RequestParam("image") MultipartFile image,
+						@RequestParam(value = "attachment", required = false) MultipartFile attachment,
+						@RequestParam("tags") String tags,
+						HttpSession session) {
 		try {
 			// 파일 저장 처리
 			if (!image.isEmpty()) {
@@ -72,18 +76,23 @@ public class MateWebController {
 				image.transferTo(dest);
 				post.setImg("/img/" + dest.getName());
 			}
-	
+
 			if (attachment != null && !attachment.isEmpty()) {
 				File attachDest = new File(fdir + "/" + attachment.getOriginalFilename());
 				attachment.transferTo(attachDest);
 			}
-	
+
 			// 태그 처리
 			List<String> tagList = Arrays.asList(tags.split(","));
+			logger.info("Received tags: {}", tagList);
+
 			// 세션에서 userId 가져오기
 			String userId = (String) session.getAttribute("userId");
 			logger.info("Retrieved userId from session: {}", userId);
+
+			// 게시글 및 태그 저장
 			dao.addPost(post, tagList, userId);
+
 		} catch (Exception e) {
 			logger.error("게시글 추가 중 오류 발생", e);
 			m.addAttribute("error", "게시글 등록 실패");
@@ -126,9 +135,10 @@ public class MateWebController {
 			m.addAttribute("tags", t);
 			// 세션에서 userId 가져오기
 			String userId = (String) session.getAttribute("userId");
+			boolean isDupul = dao.isUserAlreadyApplied(userId, postId);
 			
 			m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
-			
+			m.addAttribute("isDupul", isDupul);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			logger.warn("게시글을 가져오는 과정에서 문제 발생!!");
@@ -268,11 +278,11 @@ public class MateWebController {
 	@GetMapping("/logout")
 	public String logout(HttpSession session) {
 		session.invalidate(); // 세션 무효화
-		return "redirect:/login"; // 로그아웃 후 로그인 페이지로 이동
+		return "redirect:/mate/"; // 로그아웃 후 로그인 페이지로 이동
 	}
 
 	@GetMapping("/apply/{postId}")
-	public String apply(HttpSession session, @PathVariable("postId") int postId, Model m) {
+	public String apply(RedirectAttributes redirectAttributes, HttpSession session, @PathVariable("postId") int postId, Model m) {
 		try {
 			// 로그인 여부 확인
 			String userId = (String) session.getAttribute("userId");
@@ -290,7 +300,7 @@ public class MateWebController {
 			
 			//중복체크
 			if (dao.isUserAlreadyApplied(userId, post.getPostId())) {
-				m.addAttribute("error", "게시글에 중복 신청할 수 없습니다.");
+				redirectAttributes.addFlashAttribute("error", "게시글에 중복 신청할 수 없습니다.");
 				return "redirect:/mate/postDetail/" + postId;
 			}
 
@@ -307,5 +317,68 @@ public class MateWebController {
 		}
 
 		return "redirect:/mate/postDetail/" + postId;
+	}
+
+	@GetMapping("/applyCancel/{postId}")
+	public String applyCancel(RedirectAttributes redirectAttributes, HttpSession session, @PathVariable("postId") int postId, Model m) {
+		try {
+			// 로그인 여부 확인
+			String userId = (String) session.getAttribute("userId");
+			if (userId == null) {
+				m.addAttribute("error", "로그인이 필요합니다.");
+				return "redirect:/mate/login";
+			}
+
+			// 게시글 정보 가져오기
+			Post post = dao.getPost(postId);
+			if (post.getUserId().equals(userId)) {
+				m.addAttribute("error", "자신의 게시글에는 신청할 수 없습니다.");
+				return "redirect:/mate/postDetail/" + postId;
+			}
+			
+			//신청체크
+			if (!dao.isUserAlreadyApplied(userId, post.getPostId())) {
+				redirectAttributes.addFlashAttribute("error", "신청하지 않은 게시글을 취소할 수 없습니다.");
+				return "redirect:/mate/postDetail/" + postId;
+			}
+
+			// applyNum 감소
+			dao.decrementApplyNum(postId);
+
+			// userpost 테이블에 데이터 삭제
+			dao.delUserPost(userId, postId);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			m.addAttribute("error", "신청 처리 중 오류가 발생했습니다.");
+			return "redirect:/mate/postDetail/" + postId;
+		}
+
+		return "redirect:/mate/postDetail/" + postId;
+	}
+
+	@GetMapping("/tag/{tagName}")
+	public String getPostsByTag(@PathVariable("tagName") String tagName, HttpSession session, Model m) {
+		List<Post> posts;
+		List<Tag> tagNameList;
+		try {
+			// 태그 이름에서 #을 제거
+			String cleanedTagName = tagName.replace("#", "");
+			posts = dao.getPostsByTag(cleanedTagName);
+			tagNameList = dao.getAllTags();
+			m.addAttribute("postlist", posts);
+			m.addAttribute("tagName", tagNameList);
+
+			// 세션에서 userId 가져오기
+			String userId = (String) session.getAttribute("userId");
+			if (userId != null) {
+				m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			logger.warn("태그 기반 게시글 조회 과정에서 문제 발생!!");
+			m.addAttribute("error", "태그 기반 게시글 조회가 정상적으로 처리되지 않았습니다!!");
+		}
+		return "MAIN"; // or "categoryView" depending on where you want to display the results
 	}
 }
