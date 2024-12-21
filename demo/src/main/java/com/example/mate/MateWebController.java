@@ -214,7 +214,7 @@ public class MateWebController {
 			
 			if (userId == null || !userId.equals(post.getUserId())) {
 				m.addAttribute("error", "권한이 없습니다.");
-				return "redirect:/postDetail/" + postId; // 권한 없을 때 해당 사용자 페이지로 리다이렉트
+				return "redirect:/mate/postDetail/" + postId; // 권한 없을 때 해당 사용자 페이지로 리다이렉트
 			}
 
 			List<Tag> t = dao.getTagsByPost(postId);
