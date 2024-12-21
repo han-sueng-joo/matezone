@@ -27,7 +27,7 @@ public class MateApiController {
 	public List<Post> getPostList() {
 		List<Post> postList = null;
 		try {
-			postList = dao.getAll();
+			postList = dao.getPostAll();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -35,9 +35,9 @@ public class MateApiController {
 	}
 
 	@PostMapping
-	public String addPost(@RequestBody Post post, @RequestParam("tagIds") List<Integer> tagIds) {
+	public String addPost(@RequestBody Post post, @RequestParam("tagName") List<String> tagName) {
 		try {
-			dao.addPost(post, tagIds);
+			dao.addPost(post, tagName);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return "Post API: 게시글 등록 실패!!";

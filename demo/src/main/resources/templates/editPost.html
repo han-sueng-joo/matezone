@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -156,33 +156,54 @@
         .delete-btn:hover {
             background-color: #c9302c;
         }
+        .post-tags {
+            display: flex;
+            flex-wrap: wrap; /* 태그가 한 줄에 꽉 차면 자동으로 다음 줄로 넘어감 */
+            gap: 8px; /* 태그 간의 간격 */
+        }
+        .tag-item {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #f0f0f0; /* 배경색 */
+            border-radius: 4px; /* 태그 모서리 둥글게 */
+            font-size: 14px; /* 글자 크기 */
+            color: #333; /* 글자 색 */
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>게시글 수정</h1>
-        <form id="editPostForm">
+        <form id="editPostForm" th:action="@{/mate/editPost}" th:object="${post}" method="post" enctype="multipart/form-data">
             <!-- 제목 입력 -->
             <div class="form-group">
                 <label for="title">제목</label>
-                <input type="text" id="title" name="title" placeholder="제목을 입력해주세요">
+                <input type="text" id="title" name="title" th:field="*{title}" placeholder="제목을 입력해주세요" required>
             </div>
 
             <!-- 본문 입력 -->
             <div class="form-group">
                 <label for="content">본문</label>
-                <textarea id="content" name="content" placeholder="본문을 입력해주세요"></textarea>
+                <textarea id="content" name="content" th:field="*{content}" placeholder="본문을 입력해주세요" rows="10" required></textarea>
             </div>
-
-            <!-- 태그 버튼 -->
+            <!--
+            일단 태그 포기
+            <!- 태그 버튼 --
             <div class="form-group">
                 <label>태그</label>
                 <div class="tag-buttons" id="tagButtons">
-                    <!-- 태그 버튼이 동적으로 생성됩니다 -->
+                    <!- 태그 버튼이 동적으로 생성됩니다 --
                 </div>
-                <!-- 선택된 태그를 저장할 숨겨진 input -->
-                <input type="hidden" id="tags" name="tags" value="">
+                <!- 선택된 태그를 저장할 숨겨진 input --
+                <input type="hidden" id="tags" name="tags" th:field="*{tags}">
             </div>
+
+            -->
+
+            <div class="post-tags">
+                <span th:if="${tags != null}" th:each="tag : ${tags}" th:text="${tag.tagName}" class="tag-item"></span>
+            </div>
+            
 
             <!-- 파일 업로드 -->
             <div class="form-group">
@@ -203,6 +224,7 @@
             <div class="form-actions">
                 <button type="submit">수정하기</button>
             </div>
+            <input type="hidden" id="postId" name="postId" th:value="${post.postId}">
         </form>
         <button class="delete-btn" onclick="deletePost()">삭제하기</button>
     </div>
@@ -217,7 +239,7 @@
             '룸메이트': ['#기숙사 룸메이트', '#자취 룸메이트', '#룸메 변경'],
             '집/이동': ['#카풀', '#택시공유', '#물품 대여 및 교환', '#자유활동']
         };
-
+        /*
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
             return {
@@ -226,6 +248,8 @@
                 tags: params.get('tags')
             };
         }
+        */
+        
 
         function populateForm() {
             const { title, content, tags } = getQueryParams();
@@ -252,18 +276,26 @@
                 .map(button => button.dataset.tag);
             hiddenTagInput.value = selectedTags.join(', ');
         }
-
+        /*
         document.getElementById('editPostForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const title = document.getElementById('title').value;
             const content = document.getElementById('content').value;
             const tags = hiddenTagInput.value;
-            window.location.href = `postDetail.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+            window.location.href = `postDetail?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
         });
 
+        */
+        
         function deletePost() {
+            const postId = document.getElementById('postId').value; // postId 가져오기
+            if (!postId) {
+                alert('게시글 ID를 찾을 수 없습니다.');
+                return;
+            }
+
             if (confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
-                window.location.href = 'categoryView.html';
+                window.location.href = '/mate/deletePost/' + postId;
             }
         }
 

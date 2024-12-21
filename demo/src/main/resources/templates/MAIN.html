@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -104,43 +104,33 @@
         <h1 onclick="showAllPosts()">MATEZONE</h1>
         <nav>
             <!-- 카테고리 버튼 -->
-            <a href="#" onclick="filterPosts('수업'); return false;">수업</a>
-            <a href="#" onclick="filterPosts('공강'); return false;">공강</a>
-            <a href="#" onclick="filterPosts('룸메이트'); return false;">룸메이트</a>
-            <a href="#" onclick="filterPosts('집/이동'); return false;">집/이동</a>
-            <a href="#" onclick="showAllPosts(); return false;">모두 보기</a>
+            <a href="categoryView/1">수업</a>
+            <a href="categoryView/2">공강</a>
+            <a href="categoryView/3">룸메이트</a>
+            <a href="categoryView/4">집/이동</a>
+            <a href="/mate/">모두 보기</a>
         </nav>
         <button class="login-btn" onclick="redirectToLogin()">로그인/회원가입</button>
     </header>
-    <div class="content">
-        <!-- 글 작성 버튼 -->
-        <button class="write-btn hidden" id="writeBtn" onclick="writePost()">글 작성하기</button>
-        <!-- 게시글 목록 -->
-        <div class="post" data-category="수업">
-            <a href="postDetail.html?title=게시글1 제목&content=내용&tags=태그1"><h2>게시글1 제목</h2></a>
-            <p>내용</p>
-        </div>
-        <div class="post" data-category="공강">
-            <a href="postDetail.html?title=게시글2 제목&content=내용&tags=태그2"><h2>게시글2 제목</h2></a>
-            <p>내용</p>
-        </div>
-        <div class="post" data-category="룸메이트">
-            <a href="postDetail.html?title=게시글3 제목&content=내용&tags=태그3"><h2>게시글3 제목</h2></a>
-            <p>내용</p>
-        </div>
-        <div class="post" data-category="집/이동">
-            <a href="postDetail.html?title=게시글4 제목&content=내용&tags=태그4"><h2>게시글4 제목</h2></a>
-            <p>내용</p>
+
+    <!-- 데이터 가져오기 테스트 -->
+    <h1>테그 목록</h1>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <div th:each="tag : ${tagName}" style="padding: 5px; border: 1px solid #ccc; border-radius: 5px;">
+            <span th:text="${tag.tagName}"></span>
         </div>
     </div>
 
-    <!-- 데이터 가져오기 테스트 -->
-    <h1>게시글 목록</h1>
-    <ul>
-        <li th:each="post : ${postlist}">
-            <span th:text="${post.title}"></span>
-        </li>
-    </ul>
+    <div class="content">
+        <!-- 게시글 목록 -->
+        <div th:each="post : ${postlist}" class="post" data-category="수업">
+            <a th:href="@{/mate/postDetail/{postId}(postId=${post.postId})}">
+                <h2 th:text="${post.title}"></h2>
+            </a>
+        </div>
+    </div>
+
+    
 
     <script>
         let currentCategory = '';
@@ -167,11 +157,11 @@
 
         function writePost() {
             // 글 작성 화면으로 이동
-            window.location.href = `write.html?category=${currentCategory}`;
+            window.location.href = 'write';
         }
 
         function redirectToLogin() {
-            window.location.href = 'login.html'; // 로그인 페이지로 이동
+            window.location.href = 'login'; // 로그인 페이지로 이동
         }
 
         function getQueryParams() {
@@ -184,19 +174,21 @@
             };
         }
 
+        /*
         function updatePostPreview() {
             const { board, title, content, tags } = getQueryParams();
             if (board && title && content) {
                 const newPost = document.createElement('div');
                 newPost.classList.add('post');
                 newPost.setAttribute('data-category', board);
-                newPost.innerHTML = `<a href="postDetail.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}"><h2>${title}</h2></a><p>${content}</p><p>${tags}</p>`;
+                newPost.innerHTML = `<a href="postDetail?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}"><h2>${title}</h2></a><p>${content}</p><p>${tags}</p>`;
                 document.querySelector('.content').appendChild(newPost);
                 filterPosts(board);
             }
         }
 
         updatePostPreview();
+        */
     </script>
 </body>
 </html>

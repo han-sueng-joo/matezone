@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,13 +30,13 @@
             flex: 1;
             display: flex;
             justify-content: center;
-            gap: 50px;
+            gap: 100px;
         }
         nav a {
             text-decoration: none;
             color: #004d00;
             font-weight: 900;
-            font-size: 18px;
+            font-size: 21px;
             cursor: pointer;
         }
         .login-btn {
@@ -83,6 +83,20 @@
             color: #666;
             font-size: 14px;
         }
+        /* 글 작성 버튼 스타일 */
+        .write-btn {
+            display: block;
+            width: 150px;
+            margin: 20px auto;
+            text-align: center;
+            background-color: #004d00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
 
         /* 숨김 스타일 */
         .hidden {
@@ -94,32 +108,42 @@
     <header>
         <h1 onclick="goToMain()">MATEZONE</h1>
         <nav>
-            <a onclick="filterPosts('수업')">수업</a>
-            <a onclick="filterPosts('공강')">공강</a>
-            <a onclick="filterPosts('룸메이트')">룸메이트</a>
-            <a onclick="filterPosts('집/이동')">집/이동</a>
-            <a onclick="showAllPosts()">모두 보기</a>
+            <a th:href="@{/mate/categoryView/1}">수업</a>
+            <a th:href="@{/mate/categoryView/2}">공강</a>
+            <a th:href="@{/mate/categoryView/3}">룸메이트</a>
+            <a th:href="@{/mate/categoryView/4}">집/이동</a>
+            <a th:href="@{/mate/}">모두 보기</a>
         </nav>
         <button class="login-btn" onclick="login()">로그인/회원가입</button>
     </header>
-    <div class="content">
-        <div class="post" data-category="수업">
-            <a href="postDetail.html?title=게시글1 제목&content=내용&tags=태그1"><h2>게시글1 제목</h2></a>
-            <p>내용</p>
-        </div>
-        <div class="post" data-category="공강">
-            <a href="postDetail.html?title=게시글2 제목&content=내용&tags=태그2"><h2>게시글2 제목</h2></a>
-            <p>내용</p>
-        </div>
-        <div class="post" data-category="룸메이트">
-            <a href="postDetail.html?title=게시글3 제목&content=내용&tags=태그3"><h2>게시글3 제목</h2></a>
-            <p>내용</p>
-        </div>
-        <div class="post" data-category="집/이동">
-            <a href="postDetail.html?title=게시글4 제목&content=내용&tags=태그4"><h2>게시글4 제목</h2></a>
-            <p>내용</p>
+
+    <!-- 데이터 가져오기 테스트 -->
+    <h1>테그 목록</h1>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <div th:each="tag : ${tagName}" style="padding: 5px; border: 1px solid #ccc; border-radius: 5px;">
+            <span th:text="${tag.tagName}"></span>
         </div>
     </div>
+
+    <div class="content">
+        <!-- 게시글 목록 -->
+        <button class="write-btn" id="writeBtn" onclick="writePost()">글 작성하기</button>
+        <div th:each="post : ${postlist}" class="post" data-category="수업">
+            <a th:href="@{/mate/postDetail/{postId}(postId=${post.postId})}">
+                <h2 th:text="${post.title}"></h2>
+            </a>
+        </div>
+    </div>
+
+
+    <!-- 데이터 가져오기 테스트 -->
+    <h1>게시글 목록</h1>
+    <ul>
+        <li th:each="post : ${postlist}">
+            <span th:text="${post.title}"></span>
+        </li>
+    </ul>
+
     <script>
         function filterPosts(category) {
             const posts = document.querySelectorAll('.post');
@@ -157,7 +181,7 @@
                 const newPost = document.createElement('div');
                 newPost.classList.add('post');
                 newPost.setAttribute('data-category', board);
-                newPost.innerHTML = `<a href="postDetail.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}"><h2>${title}</h2></a><p>${content}</p><p>${tags}</p>`;
+                newPost.innerHTML = `<a href="postDetail?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}"><h2>${title}</h2></a><p>${content}</p><p>${tags}</p>`;
                 document.querySelector('.content').appendChild(newPost);
                 filterPosts(board);
             }
@@ -165,7 +189,12 @@
 
         function goToMain() {
             const { board, title, content, tags } = getQueryParams();
-            window.location.href = `main.html?board=${encodeURIComponent(board)}&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+            window.location.href = '/mate/';
+        }
+
+        function writePost() {
+            // 글 작성 화면으로 이동
+            window.location.href = '/mate/write';
         }
 
         updatePostPreview();

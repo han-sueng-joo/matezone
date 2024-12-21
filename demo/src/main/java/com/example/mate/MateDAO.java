@@ -15,7 +15,6 @@ public class MateDAO {
 	final String JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
 	final String JDBC_URL = "jdbc:mysql://localhost/mate?allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC";
 	
-
 	// DB 연결을 가져오는 메서드, DBCP를 사용하는 것이 좋음
 	public Connection open() {
 		Connection conn = null;
@@ -28,80 +27,171 @@ public class MateDAO {
 		return conn;
 	}
 
-	public List<Post> getAll() throws Exception {
+	public List<Post> getPostAll() throws Exception {
 		Connection conn = open();
 		List<Post> postList = new ArrayList<>();
-		String sql = "SELECT title FROM post";
+		String sql = "SELECT title, postId FROM post";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		ResultSet rs = pstmt.executeQuery();
 		try (conn; pstmt; rs) {
 			while (rs.next()) {
 				Post n = new Post();
 				n.setTitle(rs.getString("title"));
+				n.setPostId(rs.getInt("postId"));
 				postList.add(n);
 			}
 			return postList;
 		}
 	}
 
-	public void addPost(Post n, List<Integer> tagIds) throws Exception {
+	public List<Post> getDistinctTitlesByCategory(int categoryId) throws Exception {
 		Connection conn = open();
-		String postSql = "INSERT INTO post(title, img, createdAt, content) VALUES (?, ?, CURRENT_TIMESTAMP(), ?)";
+        List<Post> titles = new ArrayList<>();
+        String sql = """
+                SELECT DISTINCT 
+                    p.title, p.postId
+                FROM 
+                    post p
+                JOIN 
+                    posttag pt ON p.postId = pt.postId
+                JOIN 
+                    tag t ON pt.tagId = t.tagId
+                WHERE 
+                    t.categoryId = ?
+                """;
+		
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, categoryId); // categoryId를 바인딩
+	
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					Post post = new Post(); // Post 객체 생성
+					post.setTitle(rs.getString("title")); // 제목 설정
+					post.setPostId(rs.getInt("postId")); // postId 설정 (수정)
+					titles.add(post); // 리스트에 Post 객체 추가
+				}
+			}
+		}
+
+        return titles;
+    }
+
+	public void addPost(Post n, List<String> tagNames) throws Exception {
+		Connection conn = open();
+	
+		// SQL 문 정의
+		String postSql = "INSERT INTO post(title, img, createdAt, content, userId) VALUES (?, ?, CURRENT_TIMESTAMP(), ?, ?)";
+		String getTagIdSql = "SELECT tagId FROM tag WHERE tagName = ?";
 		String postTagSql = "INSERT INTO posttag(tagId, postId) VALUES (?, ?)";
 	
+		// PreparedStatement 생성
 		PreparedStatement postPstmt = conn.prepareStatement(postSql, Statement.RETURN_GENERATED_KEYS);
+		PreparedStatement getTagIdPstmt = conn.prepareStatement(getTagIdSql);
 		PreparedStatement postTagPstmt = conn.prepareStatement(postTagSql);
-
-		try (conn; postPstmt; postTagPstmt) {
+	
+		try (conn; postPstmt; getTagIdPstmt; postTagPstmt) {
 			// 1. Post 테이블에 데이터 삽입
-			postPstmt.setString(1, n.getTitle());
-			postPstmt.setString(2, n.getImg());
-			postPstmt.setString(3, n.getContent());
-			postPstmt.executeUpdate();
-
+			try {
+				postPstmt.setString(1, n.getTitle());
+				postPstmt.setString(2, n.getImg());
+				postPstmt.setString(3, n.getContent());
+				if (n.getUserId() != null) {
+					postPstmt.setString(4, n.getUserId());
+				} else {
+					postPstmt.setString(4, "defaultUserId");
+				}
+				postPstmt.executeUpdate();
+			} catch (SQLException e) {
+				System.err.println("Error inserting post into database.");
+				System.err.println("SQL: " + postSql);
+				System.err.println("Post data: " + n);
+				throw e;
+			}
+	
 			// 2. 생성된 postId 가져오기
-			ResultSet rs = postPstmt.getGeneratedKeys();
 			int postId = 0;
-			if (rs.next()) {
-				postId = rs.getInt(1); // 생성된 postId 가져오기
+			try {
+				ResultSet rs = postPstmt.getGeneratedKeys();
+				if (rs.next()) {
+					postId = rs.getInt(1); // 생성된 postId 가져오기
+				} else {
+					throw new SQLException("Failed to retrieve generated postId.");
+				}
+			} catch (SQLException e) {
+				System.err.println("Error retrieving generated postId.");
+				throw e;
 			}
-
-			// 3. Posttag 테이블에 tagId와 postId 삽입
-			for (int tagId : tagIds) {
-				postTagPstmt.setInt(1, tagId);
-				postTagPstmt.setInt(2, postId);
-				postTagPstmt.addBatch(); // 배치에 추가
+			System.out.println("Tag names to process: " + tagNames);
+			// 3. tagNames를 기반으로 태그 ID를 조회하고 postTag 테이블에 삽입
+			for (String tagName : tagNames) {
+				System.out.println("Tag names to process: " + tagNames);
+				try {
+					// 태그 이름으로 태그 ID 조회
+					getTagIdPstmt.setString(1, tagName);
+					ResultSet tagRs = getTagIdPstmt.executeQuery();
+	
+					if (tagRs.next()) {
+						int tagId = tagRs.getInt("id"); // 태그 ID 가져오기
+	
+						// Posttag 테이블에 삽입
+						postTagPstmt.setInt(1, tagId);
+						postTagPstmt.setInt(2, postId);
+						postTagPstmt.addBatch(); // 배치에 추가
+					} else {
+						System.err.println("Tag not found: " + tagName);
+					}
+				} catch (SQLException e) {
+					System.err.println("Error retrieving tagId for tagName: " + tagName);
+					System.err.println("SQL: " + getTagIdSql);
+					throw e;
+				}
 			}
-			postTagPstmt.executeBatch(); // 배치 실행
+	
+			try {
+				postTagPstmt.executeBatch(); // 배치 실행
+			} catch (SQLException e) {
+				System.err.println("Error inserting post-tag relationships.");
+				System.err.println("SQL: " + postTagSql);
+				throw e;
+			}
+		} catch (Exception e) {
+			System.err.println("Unexpected error in addPost method.");
+			e.printStackTrace();
+			throw e;
 		}
 	}
 
-	public Post getPost(int aid) throws SQLException {
+	public Post getPost(int postId) throws SQLException {
 		Connection conn = open();
 		Post n = new Post();
-		String sql = "SELECT title, img, createdAt, content FROM post WHERE aid = ?";
+		String sql = "SELECT postId, title, img, createdAt, content FROM post WHERE postId = ?";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
-		pstmt.setInt(1, aid);// 1은 ?의 위치 / 위치 정보는 1부터 시작
+		pstmt.setInt(1, postId);// 1은 ?의 위치 / 위치 정보는 1부터 시작
 		ResultSet rs = pstmt.executeQuery();
-		rs.next();
+		
 
 		try (conn; pstmt; rs) {
-			n.setPostId(rs.getInt("aid"));
-			n.setTitle(rs.getString("title"));
-			n.setImg(rs.getString("img"));
-			n.setCreatedAt(rs.getString("createdAt"));
-			n.setContent(rs.getString("content"));
-			pstmt.executeQuery();
+			if (rs.next()) {
+				n.setPostId(rs.getInt("postId"));
+				n.setTitle(rs.getString("title"));
+				n.setImg(rs.getString("img"));
+				n.setCreatedAt(rs.getString("createdAt"));
+				n.setContent(rs.getString("content"));
+			} else {
+				throw new SQLException("No post found with postId: " + postId);
+			}
+			
+			//pstmt.executeQuery();
 			return n;
 		}
 	}
 
-	public void delPost(int aid) throws SQLException {
+	public void delPost(int postId) throws SQLException {
 		Connection conn = open();
-		String sql = "delete from news where aid=?";
+		String sql = "delete from post where postId=?";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		try (conn; pstmt) {
-			pstmt.setInt(1, aid);
+			pstmt.setInt(1, postId);
 			// 삭제된 게스글이 없을 경우
 			if (pstmt.executeUpdate() == 0) {
 				throw new SQLException("DB에러");
@@ -109,22 +199,87 @@ public class MateDAO {
 		}
 	}
 
-	public void updatePost(Post n) throws SQLException {
-		// DB 연결
-		Connection conn = open();
-		String sql = "UPDATE news SET title = ?, content = ?, img = ? WHERE aid = ?";
-		PreparedStatement pstmt = conn.prepareStatement(sql);
-
-		try (conn; pstmt) {
-			// PreparedStatement에 값을 설정
-			pstmt.setString(1, n.getTitle()); // 제목
-			pstmt.setString(2, n.getContent()); // 내용
-			pstmt.setString(3, n.getImg()); // 이미지 경로
-			pstmt.setInt(4, n.getPostId()); // 게시글 ID
-
-			// UPDATE 쿼리 실행
-			pstmt.executeUpdate();
+	public void updatePost(Post post) throws SQLException {
+		String sql = """
+				UPDATE post 
+				SET title = ?, img = ?, content = ? 
+				WHERE postId = ?
+				""";
+	
+		try (Connection conn = open();
+			 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, post.getTitle());
+			pstmt.setString(2, post.getImg());
+			pstmt.setString(3, post.getContent());
+			pstmt.setInt(4, post.getPostId());
+	
+			int updatedRows = pstmt.executeUpdate();
+			if (updatedRows == 0) {
+				throw new SQLException("No post found with postId: " + post.getPostId());
+			}
 		}
 	}
  
+	public List<Tag> getTagsByCategory(int categoryId) throws Exception {
+		Connection conn = open();
+        List<Tag> tagNames = new ArrayList<>();
+        String sql = """
+                SELECT tagName 
+                FROM tag
+                WHERE categoryId = ? OR categoryId = 5
+                """;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, categoryId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+					Tag tag = new Tag();
+					tag.setTagName(rs.getString("tagName"));
+					tagNames.add(tag);
+                }
+            }
+        }
+        return tagNames;
+    }
+
+	public List<Tag> getAllTags() throws Exception {
+		Connection conn = open();
+        List<Tag> tagNames = new ArrayList<>();
+        String sql = "SELECT tagName FROM tag";
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                Tag tag = new Tag();
+				tag.setTagName(rs.getString("tagName"));
+				tagNames.add(tag);
+            }
+        }
+        return tagNames;
+    }
+
+	public List<Tag> getTagsByPost(int postId) throws Exception {
+		List<Tag> tags = new ArrayList<>();
+		String sql = """
+				SELECT t.tagId, t.tagName
+				FROM posttag pt
+				INNER JOIN tag t ON pt.tagId = t.tagId
+				WHERE pt.postId = ?
+				""";
+	
+		try (Connection conn = open();
+			 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setInt(1, postId);
+	
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					Tag tag = new Tag();
+					tag.setTagId(rs.getInt("tagId")); // 태그 ID 설정
+					tag.setTagName(rs.getString("tagName")); // 태그 이름 설정
+					tags.add(tag);
+				}
+			}
+		}
+		return tags;
+	}
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -144,7 +144,8 @@
 <body>
     <div class="container">
         <h1>MATEZONE</h1>
-        <form id="postForm">
+        <!-- action 속성 정의 -->
+        <form th:action="@{/mate/add}" method="post" id="postForm" enctype="multipart/form-data">
             <!-- 게시판 드롭다운 -->
             <div class="form-group">
                 <label for="board">게시판</label>
@@ -203,7 +204,7 @@
 
     <script>
         const tagButtonsContainer = document.getElementById('tagButtons');
-        const hiddenTagInput = document.getElementById('tags');
+        //const hiddenTagInput = document.getElementById('tags');
 
         const tagsByCategory = {
             '수업': ['#팀플', '#수강신청', '#강의교환', '#스터디', '#졸업작품'],
@@ -212,40 +213,47 @@
             '집/이동': ['#카풀', '#택시공유', '#물품 대여 및 교환', '#자유활동']
         };
 
+        // 카테고리 선택 시 태그 버튼 동적 생성
         function updateTags() {
-            const category = document.getElementById('board').value;
-            tagButtonsContainer.innerHTML = '';
+            const category = document.getElementById('board').value; // 선택된 카테고리
+            tagButtonsContainer.innerHTML = ''; // 기존 버튼 제거
 
             if (tagsByCategory[category]) {
                 tagsByCategory[category].forEach(tag => {
                     const button = document.createElement('button');
                     button.type = 'button';
-                    button.className = 'tag-button';
-                    button.dataset.tag = tag;
-                    button.textContent = tag;
+                    button.className = 'tag-button'; // 태그 버튼 클래스
+                    button.dataset.tag = tag; // 태그 데이터
+                    button.textContent = tag; // 버튼에 태그 이름 추가
+
+                    // 버튼 클릭 이벤트 추가
                     button.addEventListener('click', () => {
-                        button.classList.toggle('selected');
-                        updateSelectedTags();
+                        button.classList.toggle('active'); // active 클래스 토글
+                        updateSelectedTags(); // 선택된 태그 업데이트
                     });
-                    tagButtonsContainer.appendChild(button);
+
+                    tagButtonsContainer.appendChild(button); // 버튼 추가
                 });
             }
         }
 
+        // 선택된 태그를 업데이트하는 함수
         function updateSelectedTags() {
-            const selectedTags = Array.from(document.querySelectorAll('.tag-button.selected'))
-                .map(button => button.dataset.tag);
-            hiddenTagInput.value = selectedTags.join(', ');
+            const selectedTags = []; // 선택된 태그를 저장할 배열
+            const activeButtons = document.querySelectorAll('.tag-buttons button.active'); // active 클래스가 있는 버튼
+
+            // 선택된 버튼의 data-tag 값을 배열에 추가
+            activeButtons.forEach(button => selectedTags.push(button.getAttribute('data-tag')));
+
+            // 숨겨진 input 필드 업데이트
+            const hiddenTagInput = document.getElementById('tags');
+            if (hiddenTagInput) {
+                hiddenTagInput.value = selectedTags.join(','); // ','로 구분된 값 설정
+            }
+
+            console.log('Updated tags:', selectedTags.join(',')); // 디버깅 로그
         }
 
-        document.getElementById('postForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const board = document.getElementById('board').value;
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-            const tags = hiddenTagInput.value;
-            window.location.href = `categoryView.html?board=${encodeURIComponent(board)}&title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
-        });
     </script>
 </body>
 </html>

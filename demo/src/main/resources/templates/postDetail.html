@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -76,22 +76,38 @@
             cursor: pointer;
             margin-top: 20px;
         }
+        .post-tags {
+            display: flex;
+            flex-wrap: wrap; /* 태그가 한 줄에 꽉 차면 자동으로 다음 줄로 넘어감 */
+            gap: 8px; /* 태그 간의 간격 */
+        }
+        .tag-item {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: #f0f0f0; /* 배경색 */
+            border-radius: 4px; /* 태그 모서리 둥글게 */
+            font-size: 14px; /* 글자 크기 */
+            color: #333; /* 글자 색 */
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1 onclick="goToMain()">MATEZONE</h1>
-        <button class="back-btn" onclick="goBack()">뒤로가기</button>
+        <h1 onclick="window.location.href='/mate/'">MATEZONE</h1>
+        <button class="back-btn" onclick="window.history.back()">뒤로가기</button>
     </header>
     <div class="content">
         <div class="post-detail">
-            <h2 id="postTitle">제목</h2>
-            <p id="postContent">본문</p>
-            <p class="tags" id="postTags">태그</p>
-            <button class="edit-btn" onclick="editPost()">수정하기</button>
+            <h2 th:text="${post.title}">제목</h2>
+            <p th:text="${post.content}">본문</p>
+            <div class="post-tags">
+                <span th:if="${tags != null}" th:each="tag : ${tags}" th:text="${tag.tagName}" class="tag-item"></span>
+            </div>
+            <button class="edit-btn" th:onclick="'window.location.href=\'/mate/editPost/' + ${post.postId} + '\';'">수정하기</button>
         </div>
     </div>
-
+    <!--
+    
     <script>
         function getQueryParams() {
             const params = new URLSearchParams(window.location.search);
@@ -111,20 +127,23 @@
 
         function goBack() {
             const { title, content, tags } = getQueryParams();
-            window.location.href = `categoryView.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+            window.location.href = `categoryView`;
         }
 
         function goToMain() {
             const { title, content, tags } = getQueryParams();
-            window.location.href = `main.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+            window.location.href = '/mate/';
         }
 
         function editPost() {
             const { title, content, tags } = getQueryParams();
-            window.location.href = `editPost.html?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
+            window.location.href = `editPost?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}&tags=${encodeURIComponent(tags)}`;
         }
 
         displayPostDetails();
     </script>
+    
+    -->
+    
 </body>
 </html>
