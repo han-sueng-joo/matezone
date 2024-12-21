@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpSession;
+
 @RestController
 @RequestMapping("/api")
 public class MateApiController {
@@ -35,9 +37,10 @@ public class MateApiController {
 	}
 
 	@PostMapping
-	public String addPost(@RequestBody Post post, @RequestParam("tagName") List<String> tagName) {
+	public String addPost(@RequestBody Post post, @RequestParam("tagName") List<String> tagName, HttpSession session) {
 		try {
-			dao.addPost(post, tagName);
+			String userId = (String) session.getAttribute("userId");
+			dao.addPost(post, tagName, userId);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return "Post API: 게시글 등록 실패!!";

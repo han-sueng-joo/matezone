@@ -204,7 +204,7 @@
 
     <script>
         const tagButtonsContainer = document.getElementById('tagButtons');
-        //const hiddenTagInput = document.getElementById('tags');
+        const hiddenTagInput = document.getElementById('tags');
 
         const tagsByCategory = {
             '수업': ['#팀플', '#수강신청', '#강의교환', '#스터디', '#졸업작품'],
@@ -213,26 +213,22 @@
             '집/이동': ['#카풀', '#택시공유', '#물품 대여 및 교환', '#자유활동']
         };
 
-        // 카테고리 선택 시 태그 버튼 동적 생성
         function updateTags() {
-            const category = document.getElementById('board').value; // 선택된 카테고리
-            tagButtonsContainer.innerHTML = ''; // 기존 버튼 제거
+            const category = document.getElementById('board').value;
+            tagButtonsContainer.innerHTML = '';
 
             if (tagsByCategory[category]) {
                 tagsByCategory[category].forEach(tag => {
                     const button = document.createElement('button');
                     button.type = 'button';
-                    button.className = 'tag-button'; // 태그 버튼 클래스
-                    button.dataset.tag = tag; // 태그 데이터
-                    button.textContent = tag; // 버튼에 태그 이름 추가
-
-                    // 버튼 클릭 이벤트 추가
+                    button.className = 'tag-button';
+                    button.dataset.tag = tag;
+                    button.textContent = tag;
                     button.addEventListener('click', () => {
-                        button.classList.toggle('active'); // active 클래스 토글
-                        updateSelectedTags(); // 선택된 태그 업데이트
+                        button.classList.toggle('selected');
+                        updateSelectedTags();
                     });
-
-                    tagButtonsContainer.appendChild(button); // 버튼 추가
+                    tagButtonsContainer.appendChild(button);
                 });
             }
         }
@@ -240,13 +236,13 @@
         // 선택된 태그를 업데이트하는 함수
         function updateSelectedTags() {
             const selectedTags = []; // 선택된 태그를 저장할 배열
-            const activeButtons = document.querySelectorAll('.tag-buttons button.active'); // active 클래스가 있는 버튼
+            const tagButtons = document.querySelectorAll('.tag-buttons button.active'); // active 클래스가 있는 버튼 선택
 
             // 선택된 버튼의 data-tag 값을 배열에 추가
-            activeButtons.forEach(button => selectedTags.push(button.getAttribute('data-tag')));
+            tagButtons.forEach(button => selectedTags.push(button.getAttribute('data-tag')));
 
-            // 숨겨진 input 필드 업데이트
-            const hiddenTagInput = document.getElementById('tags');
+            // 숨겨진 input 필드와 태그 표시 업데이트
+            const hiddenTagInput = document.getElementById('tags'); // 숨겨진 input 필드
             if (hiddenTagInput) {
                 hiddenTagInput.value = selectedTags.join(','); // ','로 구분된 값 설정
             }
@@ -254,6 +250,16 @@
             console.log('Updated tags:', selectedTags.join(',')); // 디버깅 로그
         }
 
+        // 각 태그 버튼에 클릭 이벤트 추가
+        document.querySelectorAll('.tag-buttons button').forEach(button => {
+            button.addEventListener('click', function () {
+                this.classList.toggle('active'); // active 클래스 토글
+                updateSelectedTags(); // 선택된 태그 업데이트
+            });
+        });
+
+
+        
     </script>
 </body>
 </html>

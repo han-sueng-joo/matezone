@@ -105,24 +105,30 @@
     </header>
 
     <!-- 로그인/회원가입 -->
+    
     <div class="auth-container">
-        <div id="login-form" class="auth-form">
-            <h2>로그인</h2>
-            <input type="email" placeholder="이메일 또는 전화" required>
-            <input type="password" placeholder="비밀번호" required>
-            <button class="btn" onclick="handleLogin()">로그인</button>
-            <p class="switch-auth">처음이신가요? <a href="#" onclick="showSignup()">회원가입</a></p>
-        </div>
-
-        <div id="signup-form" class="auth-form hidden">
-            <h2>회원가입</h2>
-            <input type="text" placeholder="이름" required>
-            <input type="email" placeholder="이메일" required>
-            <input type="password" placeholder="비밀번호" required>
-            <input type="password" placeholder="비밀번호 확인" required>
-            <button class="btn" onclick="handleSignup()">회원가입</button>
-            <p class="switch-auth">이미 계정이 있으신가요? <a href="#" onclick="showLogin()">로그인</a></p>
-        </div>
+        <form th:action="@{/mate/signin}" method="post" id="postForm" enctype="multipart/form-data">
+            <div id="login-form" class="auth-form">
+                <h2>로그인</h2>
+                <input type="email" name="userId" placeholder="이메일 또는 전화" required>
+                <input type="password" name="password" placeholder="비밀번호" required>
+                <button class="btn" type="submit">로그인</button>
+                <p class="switch-auth">처음이신가요? <a href="#" onclick="showSignup()">회원가입</a></p>
+            </div>
+        </form>
+        </form>
+        <form th:action="@{/mate/signup}" method="post" id="postForm" enctype="multipart/form-data">
+            <div id="signup-form" class="auth-form hidden">
+                <h2>회원가입</h2>
+                <input type="text" name="userName" placeholder="이름" required>
+                <input type="email" name="userId" placeholder="이메일" required>
+                <input type="password" name="password" placeholder="비밀번호" required>
+                <input type="text" name="grade" placeholder="학년" required>
+                <input type="text" name="sex" placeholder="성별" required>
+                <button class="btn" type="submit">회원가입</button>
+                <p class="switch-auth">이미 계정이 있으신가요? <a href="#" onclick="showLogin()">로그인</a></p>
+            </div>
+        </form>
     </div>
 
     <script>

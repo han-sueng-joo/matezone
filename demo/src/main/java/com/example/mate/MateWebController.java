@@ -1,6 +1,7 @@
 package com.example.mate;
 
 import java.io.File;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.servlet.http.HttpSession;
+
 @Controller
 @RequestMapping("/mate")
 public class MateWebController {
@@ -37,7 +40,7 @@ public class MateWebController {
 	}
 
     @GetMapping("/")
-	public String listPost(Model m) {
+	public String listPost(HttpSession session, Model m) {
 		List<Post> list;
 		List<Tag> tagName;
 		try {
@@ -45,6 +48,12 @@ public class MateWebController {
 			tagName = dao.getAllTags();
 			m.addAttribute("postlist", list);
 			m.addAttribute("tagName", tagName);
+
+			// 세션에서 userId 가져오기
+			String userId = (String) session.getAttribute("userId");
+			
+			m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.warn("게시글 목록 또는 테그 생성 과정에서 문제 발생!!");
@@ -55,7 +64,7 @@ public class MateWebController {
 
 	@PostMapping("/add")
 	public String addPost(@ModelAttribute Post post, Model m, @RequestParam("image") MultipartFile image, @RequestParam(value = "attachment", required = false) MultipartFile attachment,
-	@RequestParam("tags") String tags) {
+	@RequestParam("tags") String tags, HttpSession session) {
 		try {
 			// 파일 저장 처리
 			if (!image.isEmpty()) {
@@ -71,7 +80,10 @@ public class MateWebController {
 	
 			// 태그 처리
 			List<String> tagList = Arrays.asList(tags.split(","));
-			dao.addPost(post, tagList);
+			// 세션에서 userId 가져오기
+			String userId = (String) session.getAttribute("userId");
+			logger.info("Retrieved userId from session: {}", userId);
+			dao.addPost(post, tagList, userId);
 		} catch (Exception e) {
 			logger.error("게시글 추가 중 오류 발생", e);
 			m.addAttribute("error", "게시글 등록 실패");
@@ -93,7 +105,7 @@ public class MateWebController {
 	}
 
 	@GetMapping("/postDetail/{postId}")
-	public String getPost(@PathVariable("postId") int postId, Model m) {
+	public String getPost(@PathVariable("postId") int postId, HttpSession session, Model m) {
 		System.out.println("Request received for postDetail with ID: " + postId);
 		try {
 			System.out.println("Requested post ID: " + postId); // 디버깅 로그
@@ -112,6 +124,11 @@ public class MateWebController {
 			// 게시글을 모델에 추가
 			m.addAttribute("post", n);
 			m.addAttribute("tags", t);
+			// 세션에서 userId 가져오기
+			String userId = (String) session.getAttribute("userId");
+			if (userId != null) {
+				m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 			logger.warn("게시글을 가져오는 과정에서 문제 발생!!");
@@ -132,21 +149,74 @@ public class MateWebController {
 		return "postDetail"; // 정상적으로 게시글 세부 정보 페이지로 이동
 	}
 
-	@GetMapping("login")
-	public String login(Model m) {		
+	@PostMapping("/signin")
+	public String saigin(@RequestParam("userId") String userId, @RequestParam("password") String password, HttpSession session, Model model) {
+		if (dao.authenticate(userId, password)) {
+			session.setAttribute("userId", userId); // 세션에 사용자 정보 저장
+			// 로그인 성공
+			return "redirect:/mate/";
+		} else {
+			// 로그인 실패
+			model.addAttribute("error", "아이디 또는 비밀번호가 올바르지 않습니다.");
+			return "login"; // 로그인 페이지로 다시 이동
+		}
+	}
+
+	@PostMapping("/signup")
+	public String saigup(@RequestParam("userName") String userName, 
+						@RequestParam("userId") String userId, 
+						@RequestParam("password") String password, 
+						@RequestParam("grade") String grade, 
+						@RequestParam("sex") String sex, 
+						Model model) {
+		if (dao.isEmailDuplicated(userId)) {
+			// 이메일 중복 시 처리
+			model.addAttribute("error", "이미 사용 중인 이메일입니다.");
+			return "signup"; // 회원가입 페이지로 다시 이동
+		} else {
+			try {
+				dao.insertUser(userName, userId, password, grade, sex);
+			} catch (Exception e) {
+				logger.error("회원가입 중 오류 발생: ", e);
+				model.addAttribute("error", "회원가입 중 오류가 발생했습니다.");
+				return "signup";
+			}
+			return "redirect:/mate/login"; // 로그인 페이지로 리다이렉트
+		}
+	}
+
+	@GetMapping("/login")
+	public String login(Model m) {
 		return "login";
 	}
 
 	@GetMapping("/write")
-	public String write(Model m) {
+	public String write(HttpSession session, Model m) {
+			String userId = (String) session.getAttribute("userId"); // 세션에서 사용자 정보 가져오기
+		if (userId == null) {
+			return "redirect:/mate/login"; // 비로그인 사용자는 로그인 페이지로 리다이렉트
+		}
+		m.addAttribute("userId", userId); // 로그인 사용자 정보 추가
 		return "write";
 	}
 
 	@GetMapping("/editPost/{postId}")
-	public String editPost(@PathVariable("postId") int postId, Model m) {
+	public String editPost(@PathVariable("postId") int postId, HttpSession session, Model m) {
 		try {
 			// 게시글 데이터 로드
 			Post post = dao.getPost(postId);
+			String userId = (String) session.getAttribute("userId");
+
+			if (post == null || post.getUserId() == null) {
+				m.addAttribute("error", "게시글을 찾을 수 없습니다.");
+				return "redirect:/mate/";
+			}
+			
+			if (userId == null || !userId.equals(post.getUserId())) {
+				m.addAttribute("error", "권한이 없습니다.");
+				return "redirect:/postDetail/" + postId; // 권한 없을 때 해당 사용자 페이지로 리다이렉트
+			}
+
 			List<Tag> t = dao.getTagsByPost(postId);
 			m.addAttribute("post", post);
 			m.addAttribute("tags", t);
@@ -173,7 +243,7 @@ public class MateWebController {
 	}
 
 	@GetMapping("/categoryView/{categoryId}")
-	public String categoryView(@PathVariable("categoryId") int categoryId, Model m) {
+	public String categoryView(@PathVariable("categoryId") int categoryId, HttpSession session, Model m) {
 		List<Post> list;
 		List<Tag> tagName;
 		try {
@@ -181,6 +251,11 @@ public class MateWebController {
 			tagName = dao.getTagsByCategory(categoryId);
 			m.addAttribute("postlist", list);
 			m.addAttribute("tagName", tagName);
+			// 세션에서 userId 가져오기
+			String userId = (String) session.getAttribute("userId");
+			if (userId != null) {
+				m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.warn("게시글 목록 또는 테그 생성 과정에서 문제 발생!!");
@@ -188,5 +263,11 @@ public class MateWebController {
 		}
 
 		return "categoryView";
+	}
+
+	@GetMapping("/logout")
+	public String logout(HttpSession session) {
+		session.invalidate(); // 세션 무효화
+		return "redirect:/login"; // 로그아웃 후 로그인 페이지로 이동
 	}
 }

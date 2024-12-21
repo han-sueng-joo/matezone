@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.sql.Statement;
 
@@ -76,7 +78,7 @@ public class MateDAO {
         return titles;
     }
 
-	public void addPost(Post n, List<String> tagNames) throws Exception {
+	public void addPost(Post n, List<String> tagNames, String userId) throws Exception {
 		Connection conn = open();
 	
 		// SQL 문 정의
@@ -95,8 +97,8 @@ public class MateDAO {
 				postPstmt.setString(1, n.getTitle());
 				postPstmt.setString(2, n.getImg());
 				postPstmt.setString(3, n.getContent());
-				if (n.getUserId() != null) {
-					postPstmt.setString(4, n.getUserId());
+				if (userId != null) {
+					postPstmt.setString(4, userId);
 				} else {
 					postPstmt.setString(4, "defaultUserId");
 				}
@@ -164,7 +166,7 @@ public class MateDAO {
 	public Post getPost(int postId) throws SQLException {
 		Connection conn = open();
 		Post n = new Post();
-		String sql = "SELECT postId, title, img, createdAt, content FROM post WHERE postId = ?";
+		String sql = "SELECT postId, title, img, createdAt, content, userId FROM post WHERE postId = ?";
 		PreparedStatement pstmt = conn.prepareStatement(sql);
 		pstmt.setInt(1, postId);// 1은 ?의 위치 / 위치 정보는 1부터 시작
 		ResultSet rs = pstmt.executeQuery();
@@ -177,6 +179,7 @@ public class MateDAO {
 				n.setImg(rs.getString("img"));
 				n.setCreatedAt(rs.getString("createdAt"));
 				n.setContent(rs.getString("content"));
+				n.setUserId(rs.getString("userId"));
 			} else {
 				throw new SQLException("No post found with postId: " + postId);
 			}
@@ -282,4 +285,78 @@ public class MateDAO {
 		}
 		return tags;
 	}
+
+	public boolean authenticate(String email, String password) {
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			conn = open();
+			String sql = "SELECT password FROM user WHERE userId = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, email);
+			rs = pstmt.executeQuery();
+
+			if (rs.next()) {
+				String storedPassword = rs.getString("password");
+				return storedPassword.equals(password);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) rs.close();
+				if (pstmt != null) pstmt.close();
+				if (conn != null) conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return false;
+    }
+
+	public boolean isEmailDuplicated(String email) {
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			conn = open();
+			String sql = "SELECT userId FROM user WHERE userId = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setString(1, email);
+			rs = pstmt.executeQuery();
+	
+			return rs.next(); // 중복된 이메일이 있으면 true 반환
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) rs.close();
+				if (pstmt != null) pstmt.close();
+				if (conn != null) conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return false; // 중복된 이메일이 없으면 false 반환
+	}
+
+	public void insertUser(String userName, String userId, String password, String grade, String sex) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = open();
+            String sql = "INSERT INTO user (userName, userId, password, grade, sex) VALUES (?, ?, ?, ?, ?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, userName);
+            pstmt.setString(2, userId);
+            pstmt.setString(3, password);
+            pstmt.setString(4, grade);
+            pstmt.setString(5, sex);
+            pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    }
 }
