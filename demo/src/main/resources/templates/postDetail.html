@@ -103,9 +103,25 @@
             <div class="post-tags">
                 <span th:if="${tags != null}" th:each="tag : ${tags}" th:text="${tag.tagName}" class="tag-item"></span>
             </div>
-            <button class="edit-btn" th:onclick="'window.location.href=\'/mate/editPost/' + ${post.postId} + '\';'">수정하기</button>
+            <p th:text="${post.applyNum}">신청자 수</p>
+            <div th:if="${userId != null && post.userId == userId}">
+                <button class="edit-btn" th:onclick="'window.location.href=\'/mate/editPost/' + ${post.postId} + '\';'">수정하기</button>
+            </div>
+            <div th:if="${userId != null && post.userId != userId}">
+                <button class="edit-btn" th:onclick="'window.location.href=\'/mate/apply/' + ${post.postId} + '\';'">신청하기</button>
+            </div>
+            <div id="error-message" th:if="${error}" th:text="${error}" style="display: none; color: red;"></div>
+
         </div>
     </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const errorMessage = document.getElementById('error-message');
+            if (errorMessage && errorMessage.textContent.trim() !== "") {
+                alert(errorMessage.textContent); // 알림 창 표시
+            }
+        });
+    </script>
     <!--
     
     <script>

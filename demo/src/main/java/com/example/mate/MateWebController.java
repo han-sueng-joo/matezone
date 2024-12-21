@@ -270,4 +270,42 @@ public class MateWebController {
 		session.invalidate(); // 세션 무효화
 		return "redirect:/login"; // 로그아웃 후 로그인 페이지로 이동
 	}
+
+	@GetMapping("/apply/{postId}")
+	public String apply(HttpSession session, @PathVariable("postId") int postId, Model m) {
+		try {
+			// 로그인 여부 확인
+			String userId = (String) session.getAttribute("userId");
+			if (userId == null) {
+				m.addAttribute("error", "로그인이 필요합니다.");
+				return "redirect:/mate/login";
+			}
+
+			// 게시글 정보 가져오기
+			Post post = dao.getPost(postId);
+			if (post.getUserId().equals(userId)) {
+				m.addAttribute("error", "자신의 게시글에는 신청할 수 없습니다.");
+				return "redirect:/mate/postDetail/" + postId;
+			}
+			
+			//중복체크
+			if (dao.isUserAlreadyApplied(userId, post.getPostId())) {
+				m.addAttribute("error", "게시글에 중복 신청할 수 없습니다.");
+				return "redirect:/mate/postDetail/" + postId;
+			}
+
+			// applyNum 증가
+			dao.incrementApplyNum(postId);
+
+			// userpost 테이블에 데이터 추가
+			dao.addUserPost(userId, postId);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			m.addAttribute("error", "신청 처리 중 오류가 발생했습니다.");
+			return "redirect:/mate/postDetail/" + postId;
+		}
+
+		return "redirect:/mate/postDetail/" + postId;
+	}
 }

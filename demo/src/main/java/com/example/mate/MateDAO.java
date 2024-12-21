@@ -360,4 +360,57 @@ public class MateDAO {
             if (conn != null) conn.close();
         }
     }
+
+	// Increment applyNum for a given postId
+    public void incrementApplyNum(int postId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = open();
+            String sql = "UPDATE post SET applyNum = applyNum + 1 WHERE postId = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, postId);
+            pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    }
+
+    // Add a user-post relation
+    public void addUserPost(String userId, int postId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        try {
+            conn = open();
+            String sql = "INSERT INTO userpost (userId, postId) VALUES (?, ?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, userId);
+            pstmt.setInt(2, postId);
+            pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    }
+
+	// Check if user already applied to the post
+    public boolean isUserAlreadyApplied(String userId, int postId) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        try {
+            conn = open();
+            String sql = "SELECT 1 FROM userpost WHERE userId = ? AND postId = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, userId);
+            pstmt.setInt(2, postId);
+            rs = pstmt.executeQuery();
+            return rs.next();
+        } finally {
+            if (rs != null) rs.close();
+            if (pstmt != null) pstmt.close();
+            if (conn != null) conn.close();
+        }
+    }
 }
