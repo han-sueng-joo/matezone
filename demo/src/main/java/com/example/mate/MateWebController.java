@@ -253,9 +253,9 @@ public class MateWebController {
 			m.addAttribute("tagName", tagName);
 			// 세션에서 userId 가져오기
 			String userId = (String) session.getAttribute("userId");
-			if (userId != null) {
-				m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
-			}
+			
+			m.addAttribute("userId", userId); // userId가 있으면 모델에 추가
+			
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.warn("게시글 목록 또는 테그 생성 과정에서 문제 발생!!");
